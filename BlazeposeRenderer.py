@@ -81,7 +81,7 @@ class BlazeposeRenderer:
         if self.show_landmarks:                
             list_connections = LINES_BODY
             lines = [np.array([body.landmarks[point,:2] for point in line]) for line in list_connections if self.is_present(body, line[0]) and self.is_present(body, line[1])]
-            cv2.polylines(self.frame, lines, False, (255, 180, 90), 2, cv2.LINE_AA)
+            cv2.polylines(self.frame, lines, False, (255, 180, 90), 5, cv2.LINE_AA)
             
             # for i,x_y in enumerate(body.landmarks_padded[:,:2]):
             for i,x_y in enumerate(body.landmarks[:self.tracker.nb_kps,:2]):
@@ -94,7 +94,7 @@ class BlazeposeRenderer:
                         color = (0,255,0)
                     else:
                         color = (0,0,255)
-                    cv2.circle(self.frame, (x_y[0], x_y[1]), 4, color, -11)
+                    cv2.circle(self.frame, (x_y[0], x_y[1]), 4, color, 10)
         if self.show_score:
             h, w = self.frame.shape[:2]
             cv2.putText(self.frame, f"Landmark score: {body.lm_score:.2f}", 
@@ -171,7 +171,7 @@ class BlazeposeRenderer:
     def waitKey(self, delay=1):
         if self.show_fps:
             self.tracker.fps.draw(self.frame, orig=(50,50), size=1, color=(240,180,100))
-        cv2.imshow("Blazepose", self.frame)
+        # cv2.imshow("Blazepose", self.frame)
         if self.output:
             self.output.write(self.frame)
         key = cv2.waitKey(delay) 
