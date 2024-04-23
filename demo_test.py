@@ -5,9 +5,9 @@ import argparse
 import streamlit as st
 import numpy as np
 import mediapipe as mp
+from mediapipe_utils import KEYPOINT_DICT
 import cv2
 
-mp_pose = mp.solutions.pose
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-e', '--edge', action="store_true",
@@ -115,6 +115,8 @@ def streamlit_cam(args):
                     tracker, 
                     show_3d=args.show_3d, 
                     output=args.output)
+    stage = None
+    counter = 0
 
     while True:
         # Run blazepose on next frame
@@ -123,20 +125,33 @@ def streamlit_cam(args):
         # Draw 2d skeleton
         frame = renderer.draw(frame, body)
         if body:
-            shoulder = [body.landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x,body.landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
-            elbow = [body.landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x,body.landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
-            wrist = [body.landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x,body.landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
+            print("body detected")
+            shoulder = body.landmarks[KEYPOINT_DICT['left_shoulder'],:2]
+            elbow = body.landmarks[KEYPOINT_DICT['left_elbow'],:2]
+            wrist = body.landmarks[KEYPOINT_DICT['left_wrist'],:2]
             
             # Calculate angle
-            angle = (shoulder, elbow, wrist)
+            angle = calculate_angle(shoulder, elbow, wrist)
+            print(f'angle is {0}',angle)
             
+            # Curl counter logic
+            if angle > 160:
+                stage = "down"
+                cv2.putText(frame, stage, (frame.shape[1] // 2, 100), cv2.FONT_HERSHEY_PLAIN, 5, (0,190,255), 3)
+            if angle < 30 and stage =='down':
+                stage="up"
+                counter +=1
+                cv2.putText(frame, stage, (frame.shape[1] // 2, 100), cv2.FONT_HERSHEY_PLAIN, 5, (0,190,255), 3)
+                print("counter is ",counter)
+            print("stage is ",stage)
             # Visualize angle
-            cv2.putText(frame, str(angle), 
-                           tuple(np.multiply(elbow, [640, 480]).astype(int)), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
-            #  Display on 
-            frame_placeholder.image(frame,channels="BGR")
+            cv2.putText(frame,"REPS", (100, 200), cv2.FONT_HERSHEY_PLAIN, 3, (0,190,255), 3)
+            cv2.putText(frame,str(counter), (100, 100), cv2.FONT_HERSHEY_PLAIN, 5, (0,190,255), 3)
 
+
+
+            #  Display on 
+        frame_placeholder.image(frame,channels="BGR")
         key = renderer.waitKey(delay=1)
         if key == 27 or key == ord('q') or stop_button_pressed:
             break
